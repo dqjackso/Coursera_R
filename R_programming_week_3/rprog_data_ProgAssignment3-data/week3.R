@@ -1,13 +1,6 @@
 valid_outcomes <- c("heart attack", "heart failure", "pneumonia")
 
-best <- function(state, outcome) {
-  ## Format state and outcome
-  state <- toupper(state)
-  outcome <- tolower(outcome)
-  
-  ## Read outcome data
-  data <- read.csv("outcome-of-care-measures.csv")
-  
+check <- function(state, outcome) {
   ## Check that state and outcome are valid
   if (nchar(state) != 2 | !state %in% state.abb) {
     stop("invalid state")
@@ -16,6 +9,18 @@ best <- function(state, outcome) {
   if (!outcome %in% valid_outcomes) {
     stop("invalid outcome")
   }
+}
+
+best <- function(state, outcome) {
+  ## Format state and outcome
+  state <- toupper(state)
+  outcome <- tolower(outcome)
+  
+  ## Read outcome data
+  data <- read.csv("outcome-of-care-measures.csv")
+  
+  ## Check state and outcome
+  check(state, outcome)
   
   ## Return hospital name in that state with lowest 30-day death rate
   ## Filter to only hospitals in the state
