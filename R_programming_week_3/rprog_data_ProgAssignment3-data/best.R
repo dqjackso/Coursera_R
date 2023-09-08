@@ -1,30 +1,15 @@
-valid_outcomes <- c("heart attack", "heart failure", "pneumonia")
-
-check <- function(state, outcome) {
-  ## Check that state and outcome are valid
-  if (nchar(state) != 2 | !state %in% state.abb) {
-    stop("invalid state")
-  }
-  
-  if (!outcome %in% valid_outcomes) {
-    stop("invalid outcome")
-  }
-}
+source("helpers.R")
 
 best <- function(state, outcome) {
   ## Format state and outcome
   state <- toupper(state)
   outcome <- tolower(outcome)
   
-  ## Read outcome data
-  data <- read.csv("outcome-of-care-measures.csv")
-  
   ## Check state and outcome
   check(state, outcome)
   
-  ## Return hospital name in that state with lowest 30-day death rate
-  ## Filter to only hospitals in the state
-  state_hospitals <- data[data$State == state, ]
+  # Get data for the state
+  state_hospitals <- get_state_data(state)
   
   ## Remove NA values and return the minimum lowest rate associated with the outcome
   suppressWarnings(
@@ -46,24 +31,4 @@ best <- function(state, outcome) {
   ## Find hospitals with the lowest rate in alphabetical order
   ## Return the first hospital
   sort(winner$Hospital.Name)[1]
-}
-
-rankhospital <- function(state, outcome, num) {
-  ## Read outcome data
-  
-  ## Check that the state and outcome are valid
-  
-  ## Return a vector containing the name of the hospital with the 
-  ## {num} lowest death rate for {outcome} from {state}
-}
-
-rankall <- function(outcome, num = "best") {
-  ## Read outcome data
-  
-  ## Check that state and outcome are valid
-  
-  ## For each state, find the hospital of the given rank
-  
-  ## Return a data frame with the hospital names and the abbreviated
-  ## state name that are {num} for {outcome} from all states
 }
