@@ -1,0 +1,111 @@
+---
+title: "Reproducible Research Project 1"
+author: "Derek Q. Jackson"
+output: html_document
+---
+
+---
+
+## Introduction
+
+This report presents an analysis of personal activity monitoring data collected from an anonymous individual during **October and November 2012.** The data set, comprising 5-minute interval measurements, includes variables such as the number of steps taken, the date, and the specific 5-minute interval identifier.
+
+The data set can be downloaded from: [Activity monitoring data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip)
+
+The variables included in this data set are:
+
+- **steps:** Number of steps taking in a 5-minute interval (missing values are coded as 
+*NA*)
+
+- **date:** The date on which the measurement was taken in YYYY-MM-DD format
+
+- **interval:** Identifier for the 5-minute interval in which measurement was taken
+
+This analysis aims to explore daily activity patterns, quantify total steps, investigate average daily activity trends, address missing data, and compare activity levels between weekdays and weekends.
+
+The project emphasizes reproducible research practices. All data loading, processing, analysis, and visualization steps are conducted using R and documented within this R Markdown file. This ensures that the entire analysis can be fully replicated, promoting transparency and verifying the integrity of the findings presented herein.
+
+---
+
+#### Loading & Exploring the Data
+
+Load the data set into a data table directly. Then view the head of the data.
+
+```{r}
+activityData <<- data.table::fread(file = "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip")
+
+head(activityData)
+```
+
+The head shows that there are many NAs in the steps. The date column is in IDate format.
+The interval column is in integer format.
+
+Let's look at a summary of the data.
+
+```{r}
+summary(activityData, na.rm = TRUE)
+```
+
+We see here that the the minimum number of steps taken in any 5 minute interval is 0.
+The maximum number of steps taken in any 5 minute interval is 806. 
+
+Interval is key here, because it is represented as integers. These integers actually correspond
+to a time of day, i.e. 0 means 12 AM (0000 in 24-hour format) and 2355 means 1155 PM (2355 in 
+24-hour format).
+
+---
+
+#### Pre-Processing
+
+1. Convert interval to chron time.
+
+2. Create a combined PosixCT field that contains a combination of the date and interval.
+
+---
+
+#### What is the Mean Total Number of Steps Taken Per Day?
+
+1. Calculate the total number of steps taken per day.
+
+2. Here is a histogram of the total number of steps taken each day.
+
+3. Calculate the mean and median of the total number of steps taken per day.
+
+---
+
+#### What is the Average Daily Activity Pattern?
+
+1. Here is a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis).
+
+###### Which 5-minute interval, on average across all the days in the data set, contains the maximum number of steps?
+
+---
+
+#### Imputing Missing Values
+
+Note that there are days/intervals where there are missing values (coded as *NA*).
+The presence of missing days may introduce bias into some calculations or summaries of the data.
+
+1. Calculate the total number of missing values in the data set
+
+2. Fill in the missing values with the mean for that day.
+
+3. Create a new data set that is equal to the original with the missing data filled in.
+
+4. Here is a histogram of the total number of steps taken each day, with the imputed values.
+
+5. Here is the mean and median number of steps taken per day.
+
+###### Do these values differ from the estimates from the original summary?
+
+###### What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+---
+
+#### Are there differences in Activty Patterns between Weekdays & Weekends?
+
+1. Create a new factor variable in the data set with two levels ("weekday" and "weekend") indicating whether a given date is a weekday or weekend day.
+
+2. Here is a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
+
+---
