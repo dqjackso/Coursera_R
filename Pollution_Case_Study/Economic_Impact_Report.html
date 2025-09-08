@@ -11,7 +11,7 @@
 
 <meta name="author" content="Derek Q. Jackson" />
 
-<meta name="date" content="2025-08-29" />
+<meta name="date" content="2025-09-08" />
 
 <title>The Economic Cost of Weather Events</title>
 
@@ -239,6 +239,106 @@ ul.task-list{list-style: none;}
 
 
 
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ background-color: #f8f8f8; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ef2929; } 
+code span.an { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.at { color: #204a87; } 
+code span.bn { color: #0000cf; } 
+code span.cf { color: #204a87; font-weight: bold; } 
+code span.ch { color: #4e9a06; } 
+code span.cn { color: #8f5902; } 
+code span.co { color: #8f5902; font-style: italic; } 
+code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.do { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.dt { color: #204a87; } 
+code span.dv { color: #0000cf; } 
+code span.er { color: #a40000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #0000cf; } 
+code span.fu { color: #204a87; font-weight: bold; } 
+code span.im { } 
+code span.in { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.kw { color: #204a87; font-weight: bold; } 
+code span.op { color: #ce5c00; font-weight: bold; } 
+code span.ot { color: #8f5902; } 
+code span.pp { color: #8f5902; font-style: italic; } 
+code span.sc { color: #ce5c00; font-weight: bold; } 
+code span.ss { color: #4e9a06; } 
+code span.st { color: #4e9a06; } 
+code span.va { color: #000000; } 
+code span.vs { color: #4e9a06; } 
+code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
 
 
 
@@ -343,7 +443,7 @@ display: none;
 <h3 class="subtitle">A historical analysis of the economic impacts of
 severe weather events in the United States from 1950 to 2011.</h3>
 <h4 class="author">Derek Q. Jackson</h4>
-<h4 class="date">August 29, 2025</h4>
+<h4 class="date">September 08, 2025</h4>
 
 </div>
 
@@ -355,11 +455,11 @@ Processing</a>
 <ul>
 <li><a href="#package-installation-loading" id="toc-package-installation-loading">Package Installation &amp;
 Loading</a></li>
-<li><a href="#data-acquisition-preparation" id="toc-data-acquisition-preparation">Data Acquisition &amp;
-Preparation</a>
+<li><a href="#data-acquisition" id="toc-data-acquisition">Data
+Acquisition</a></li>
+<li><a href="#data-cleaning-preparation" id="toc-data-cleaning-preparation">Data Cleaning &amp; Preparation</a>
 <ul>
-<li><a href="#data-cleaning" id="toc-data-cleaning">Data
-Cleaning</a></li>
+<li><a href="#verifying-the-cleaned-data" id="toc-verifying-the-cleaned-data">Verifying the Cleaned Data</a></li>
 </ul></li>
 </ul></li>
 <li><a href="#analysis" id="toc-analysis">Analysis</a></li>
@@ -373,13 +473,193 @@ Cleaning</a></li>
 </div>
 <div id="data-processing" class="section level1">
 <h1>Data Processing</h1>
+<p>This section outlines the process of acquiring and preparing the NOAA
+Storm Database for analysis. The raw data, provided as a compressed
+<em>.csv.bz2</em> file, is read directly from the source website using
+the <em>fread</em> function from the <em>data.table</em> package, which
+efficiently handles large compressed files. The dataset contains records
+of major storms and weather events in the United States from 1950 to
+November 2011, including details on event types, locations, fatalities,
+injuries, and property damage.</p>
 <div id="package-installation-loading" class="section level2">
 <h2>Package Installation &amp; Loading</h2>
+<p>First, it’s important to ensure that all necessary R packages for
+running this analysis &amp; report are installed and loaded. If you are
+running this analysis for the first time, these packages will be
+installed automatically.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>required_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;data.table&quot;</span>, <span class="st">&quot;lubridate&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;cowplot&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co"># Check if packages are installed, install if not, then load them</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="cf">for</span> (pkg <span class="cf">in</span> required_packages) {</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">require</span>(pkg, <span class="at">character.only =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>    <span class="fu">install.packages</span>(pkg, <span class="at">dependencies =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>    <span class="fu">library</span>(pkg, <span class="at">character.only =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>  }</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>}</span></code></pre></div>
 </div>
-<div id="data-acquisition-preparation" class="section level2">
-<h2>Data Acquisition &amp; Preparation</h2>
-<div id="data-cleaning" class="section level3">
-<h3>Data Cleaning</h3>
+<div id="data-acquisition" class="section level2">
+<h2>Data Acquisition</h2>
+<p>The NOAA Storm Database is accessed directly from the URL without
+saving it locally. The fread function reads the compressed
+<em>.csv.bz2</em> file into a <em>data.table</em> object for efficient
+processing. To optimize performance, caching is enabled for this
+time-consuming operation.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">options</span>(<span class="at">knitr.cache =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>data_url <span class="ot">&lt;-</span> <span class="st">&quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2&quot;</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>storm_data <span class="ot">&lt;-</span> <span class="fu">fread</span>(data_url, <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+</div>
+<div id="data-cleaning-preparation" class="section level2">
+<h2>Data Cleaning &amp; Preparation</h2>
+<p>The raw NOAA Storm Database requires cleaning to ensure data quality,
+consistency, and usability for addressing the project’s key questions:
+identifying weather events most harmful to population health (via
+fatalities and injuries) and those with the greatest economic
+consequences (via property and crop damage). Without proper cleaning,
+inconsistencies such as varying case in event types, missing values, or
+improperly formatted damage estimates could lead to inaccurate
+aggregations, biased results, or errors in the analysis.</p>
+<p>For instance, the database spans decades with evolving recording
+practices, leading to potential data entry variations and incompleteness
+in earlier years. The cleaning steps are designed to mitigate these
+issues while preserving as much valid data as possible, ensuring
+reproducibility, and aligning with the National Weather Service’s
+documentation on variable definitions. The following subsections detail
+each step with its rationale and corresponding code.</p>
+<ol style="list-style-type: decimal">
+<li>Inspecting the Dataset</li>
+</ol>
+<p>Summarizing key columns <em>(EVTYPE, FATALITIES, INJURIES, PROPDMG,
+CROPDMG)</em> helps understand the data’s structure, ranges, and
+potential issues like outliers or data types. We also explicitly check
+for missing values in these critical columns to quantify data gaps and
+inform handling strategies, ensuring we make informed decisions about
+data retention or removal.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Inspect the dataset</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">summary</span>(storm_data[, .(EVTYPE, FATALITIES, INJURIES, PROPDMG, CROPDMG)])</span></code></pre></div>
+<pre><code>##     EVTYPE            FATALITIES           INJURIES            PROPDMG       
+##  Length:902297      Min.   :  0.00000   Min.   :   0.0000   Min.   :   0.00  
+##  Class :character   1st Qu.:  0.00000   1st Qu.:   0.0000   1st Qu.:   0.00  
+##  Mode  :character   Median :  0.00000   Median :   0.0000   Median :   0.00  
+##                     Mean   :  0.01678   Mean   :   0.1557   Mean   :  12.06  
+##                     3rd Qu.:  0.00000   3rd Qu.:   0.0000   3rd Qu.:   0.50  
+##                     Max.   :583.00000   Max.   :1700.0000   Max.   :5000.00  
+##     CROPDMG       
+##  Min.   :  0.000  
+##  1st Qu.:  0.000  
+##  Median :  0.000  
+##  Mean   :  1.527  
+##  3rd Qu.:  0.000  
+##  Max.   :990.000</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Check for missing values in critical columns</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>missing_summary <span class="ot">&lt;-</span> storm_data[, .(</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">EVTYPE_missing =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(EVTYPE)),</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">FATALITIES_missing =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(FATALITIES)),</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">INJURIES_missing =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(INJURIES)),</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="at">PROPDMG_missing =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(PROPDMG)),</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  <span class="at">CROPDMG_missing =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(CROPDMG))</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>)]</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="fu">print</span>(missing_summary)</span></code></pre></div>
+<pre><code>##    EVTYPE_missing FATALITIES_missing INJURIES_missing PROPDMG_missing
+##             &lt;int&gt;              &lt;int&gt;            &lt;int&gt;           &lt;int&gt;
+## 1:              0                  0                0               0
+##    CROPDMG_missing
+##              &lt;int&gt;
+## 1:               0</code></pre>
+<p>The output of <em>missing_summary</em> indicates no missing values
+<em>(NA)</em> in the critical columns <em>(EVTYPE, FATALITIES, INJURIES,
+PROPDMG, CROPDMG)</em>. This suggests the dataset is complete for these
+variables, which simplifies our cleaning process. However, we proceed
+with checks for other potential issues, such as empty strings or invalid
+entries, in subsequent steps.</p>
+<ol start="2" style="list-style-type: decimal">
+<li>Handling Missing or Invalid Values</li>
+</ol>
+<p>Although the inspection shows no <em>NA</em> values in the critical
+columns, we include a step to handle potential edge cases, such as empty
+strings in <em>EVTYPE</em> or zero values in damage columns that might
+reflect unreported data. For <em>EVTYPE</em>, we ensure no empty strings
+<em>(e.g., ““)</em> exist, as this column is central to grouping events
+for analysis. Rows with empty <em>EVTYPE</em> strings would be
+meaningless for aggregating health or economic impacts and are removed.
+For <em>PROPDMG</em> and <em>CROPDMG</em>, values of zero are retained,
+as the documentation suggests unreported damage implies no significant
+loss, but we verify that no negative values exist, which would be
+invalid for damage estimates.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Remove rows with empty or whitespace-only EVTYPE</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>storm_data <span class="ot">&lt;-</span> storm_data[EVTYPE <span class="sc">!=</span> <span class="st">&quot;&quot;</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(<span class="fu">trimws</span>(EVTYPE))]</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># Verify no negative values in damage columns</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>storm_data[PROPDMG <span class="sc">&lt;</span> <span class="dv">0</span>, PROPDMG <span class="sc">:=</span> <span class="dv">0</span>]</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>storm_data[CROPDMG <span class="sc">&lt;</span> <span class="dv">0</span>, CROPDMG <span class="sc">:=</span> <span class="dv">0</span>]</span></code></pre></div>
+<ol start="3" style="list-style-type: decimal">
+<li>Standardizing Event Types</li>
+</ol>
+<p>The <em>EVTYPE</em> column may contain inconsistencies due to manual
+entry over many years, such as variations in casing (e.g., “Tornado”
+vs. “TORNADO”), extra spaces, or minor misspellings. Converting to
+uppercase and trimming whitespace reduces these duplicates, allowing
+accurate aggregation by event type.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Standardize EVTYPE</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>storm_data[, EVTYPE <span class="sc">:=</span> <span class="fu">toupper</span>(<span class="fu">trimws</span>(EVTYPE))]</span></code></pre></div>
+<ol start="4" style="list-style-type: decimal">
+<li>Processing Damage Variables</li>
+</ol>
+<p>Property and crop damage are recorded in two parts: a numeric base
+<em>(PROPDMG, CROPDMG)</em> and an exponent code <em>(PROPDMGEXP,
+CROPDMGEXP)</em> like “K” (thousands), “M” (millions), or “B”
+(billions), as per the Storm Data Documentation. Without conversion,
+these cannot be summed meaningfully for total economic consequences.</p>
+<p>We define a function to map exponents to numeric multipliers
+(defaulting to 1 for empty or invalid codes to avoid data loss) and
+compute <em>TOTAL_DMG</em> in consistent USD units. This step ensures
+comparable economic impacts across events.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Define function to convert damage exponents to numeric multipliers</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>convert_exp <span class="ot">&lt;-</span> <span class="cf">function</span>(exp) {</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  exp <span class="ot">&lt;-</span> <span class="fu">toupper</span>(exp)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="fu">ifelse</span>(exp <span class="sc">==</span> <span class="st">&quot;K&quot;</span>, <span class="fl">1e3</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>         <span class="fu">ifelse</span>(exp <span class="sc">==</span> <span class="st">&quot;M&quot;</span>, <span class="fl">1e6</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>                <span class="fu">ifelse</span>(exp <span class="sc">==</span> <span class="st">&quot;B&quot;</span>, <span class="fl">1e9</span>, <span class="dv">1</span>)))</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>}</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co"># Convert damage exponents and calculate total damage in USD</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>storm_data[, PROPDMGEXP <span class="sc">:=</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(PROPDMGEXP) <span class="sc">|</span> PROPDMGEXP <span class="sc">==</span> <span class="st">&quot;&quot;</span>, <span class="dv">1</span>, <span class="fu">convert_exp</span>(PROPDMGEXP))]</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>storm_data[, CROPDMGEXP <span class="sc">:=</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(CROPDMGEXP) <span class="sc">|</span> CROPDMGEXP <span class="sc">==</span> <span class="st">&quot;&quot;</span>, <span class="dv">1</span>, <span class="fu">convert_exp</span>(CROPDMGEXP))]</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>storm_data[, TOTAL_DMG <span class="sc">:=</span> PROPDMG <span class="sc">*</span> PROPDMGEXP <span class="sc">+</span> CROPDMG <span class="sc">*</span> CROPDMGEXP]</span></code></pre></div>
+<ol start="5" style="list-style-type: decimal">
+<li>Parsing Dates</li>
+</ol>
+<p>The BGN_DATE column is in a string format <em>(e.g., “MM/DD/YYYY
+HH:MM:SS”)</em>, which is not suitable for chronological analysis or
+filtering. Using <em>lubridate::mdy_hms</em>, we convert it to a POSIXct
+date-time object with UTC timezone to enable time-based insights, such
+as trends over years or seasonal patterns.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Parse BGN_DATE to date format</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>storm_data[, BGN_DATE <span class="sc">:=</span> <span class="fu">mdy_hms</span>(BGN_DATE, <span class="at">tz =</span> <span class="st">&quot;UTC&quot;</span>)]</span></code></pre></div>
+<div id="verifying-the-cleaned-data" class="section level3">
+<h3>Verifying the Cleaned Data</h3>
+<p>After cleaning, we verify the transformed dataset by summarizing the
+key variables to ensure the transformations were applied correctly. This
+step confirms that event types are standardized, health and damage
+metrics are complete, and dates are properly formatted, setting the
+stage for accurate analysis of population health and economic
+impacts.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Verify cleaned data</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">summary</span>(storm_data[, .(EVTYPE, FATALITIES, INJURIES, TOTAL_DMG, BGN_DATE)])</span></code></pre></div>
+<pre><code>##     EVTYPE            FATALITIES           INJURIES           TOTAL_DMG       
+##  Length:902297      Min.   :  0.00000   Min.   :   0.0000   Min.   :0.00e+00  
+##  Class :character   1st Qu.:  0.00000   1st Qu.:   0.0000   1st Qu.:0.00e+00  
+##  Mode  :character   Median :  0.00000   Median :   0.0000   Median :0.00e+00  
+##                     Mean   :  0.01678   Mean   :   0.1557   Mean   :5.28e+05  
+##                     3rd Qu.:  0.00000   3rd Qu.:   0.0000   3rd Qu.:1.00e+03  
+##                     Max.   :583.00000   Max.   :1700.0000   Max.   :1.15e+11  
+##     BGN_DATE                  
+##  Min.   :1950-01-03 00:00:00  
+##  1st Qu.:1995-04-20 00:00:00  
+##  Median :2002-03-18 00:00:00  
+##  Mean   :1998-12-27 23:37:48  
+##  3rd Qu.:2007-07-28 00:00:00  
+##  Max.   :2011-11-30 00:00:00</code></pre>
 <hr />
 </div>
 </div>

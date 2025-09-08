@@ -19,9 +19,10 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.align =
 -----
 
 # Data Processing
+This section outlines the process of acquiring and preparing the NOAA Storm Database for analysis. The raw data, provided as a compressed *.csv.bz2* file, is read directly from the source website using the *fread* function from the *data.table* package, which efficiently handles large compressed files. The dataset contains records of major storms and weather events in the United States from 1950 to November 2011, including details on event types, locations, fatalities, injuries, and property damage.
 
 ## Package Installation & Loading
-This section ensures that all necessary R packages for running this analysis & report are installed and loaded. If you are running this analysis for the first time, these packages will be installed automatically.
+First, it's important to ensure that all necessary R packages for running this analysis & report are installed and loaded. If you are running this analysis for the first time, these packages will be installed automatically.
 
 ```{r}
 required_packages <- c("data.table", "lubridate", "ggplot2", "cowplot")
@@ -35,9 +36,101 @@ for (pkg in required_packages) {
 }
 ```
 
-## Data Acquisition & Preparation
+## Data Acquisition
+The NOAA Storm Database is accessed directly from the URL without saving it locally. The fread function reads the compressed *.csv.bz2* file into a *data.table* object for efficient processing. To optimize performance, caching is enabled for this time-consuming operation.
 
-### Data Cleaning
+```{r}
+options(knitr.cache = TRUE)
+
+data_url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+storm_data <- fread(data_url, stringsAsFactors = FALSE)
+```
+
+## Data Cleaning & Preparation
+The raw NOAA Storm Database requires cleaning to ensure data quality, consistency, and usability for addressing the project's key questions: identifying weather events most harmful to population health (via fatalities and injuries) and those with the greatest economic consequences (via property and crop damage). Without proper cleaning, inconsistencies such as varying case in event types, missing values, or improperly formatted damage estimates could lead to inaccurate aggregations, biased results, or errors in the analysis. 
+
+For instance, the database spans decades with evolving recording practices, leading to potential data entry variations and incompleteness in earlier years. The cleaning steps are designed to mitigate these issues while preserving as much valid data as possible, ensuring reproducibility, and aligning with the National Weather Service's documentation on variable definitions. The following subsections detail each step with its rationale and corresponding code.
+
+1. Inspecting the Dataset
+
+Summarizing key columns *(EVTYPE, FATALITIES, INJURIES, PROPDMG, CROPDMG)* helps understand the data's structure, ranges, and potential issues like outliers or data types. We also explicitly check for missing values in these critical columns to quantify data gaps and inform handling strategies, ensuring we make informed decisions about data retention or removal.
+
+```{r}
+# Inspect the dataset
+summary(storm_data[, .(EVTYPE, FATALITIES, INJURIES, PROPDMG, CROPDMG)])
+
+# Check for missing values in critical columns
+missing_summary <- storm_data[, .(
+  EVTYPE_missing = sum(is.na(EVTYPE)),
+  FATALITIES_missing = sum(is.na(FATALITIES)),
+  INJURIES_missing = sum(is.na(INJURIES)),
+  PROPDMG_missing = sum(is.na(PROPDMG)),
+  CROPDMG_missing = sum(is.na(CROPDMG))
+)]
+print(missing_summary)
+```
+
+The output of *missing_summary* indicates no missing values *(NA)* in the critical columns *(EVTYPE, FATALITIES, INJURIES, PROPDMG, CROPDMG)*. This suggests the dataset is complete for these variables, which simplifies our cleaning process. However, we proceed with checks for other potential issues, such as empty strings or invalid entries, in subsequent steps.
+
+2. Handling Missing or Invalid Values
+
+Although the inspection shows no *NA* values in the critical columns, we include a step to handle potential edge cases, such as empty strings in *EVTYPE* or zero values in damage columns that might reflect unreported data. For *EVTYPE*, we ensure no empty strings *(e.g., "")* exist, as this column is central to grouping events for analysis. Rows with empty *EVTYPE* strings would be meaningless for aggregating health or economic impacts and are removed. For *PROPDMG* and *CROPDMG*, values of zero are retained, as the documentation suggests unreported damage implies no significant loss, but we verify that no negative values exist, which would be invalid for damage estimates.
+
+```{r}
+# Remove rows with empty or whitespace-only EVTYPE
+storm_data <- storm_data[EVTYPE != "" & !is.na(trimws(EVTYPE))]
+
+# Verify no negative values in damage columns
+storm_data[PROPDMG < 0, PROPDMG := 0]
+storm_data[CROPDMG < 0, CROPDMG := 0]
+```
+
+3. Standardizing Event Types
+
+The *EVTYPE* column may contain inconsistencies due to manual entry over many years, such as variations in casing (e.g., "Tornado" vs. "TORNADO"), extra spaces, or minor misspellings. Converting to uppercase and trimming whitespace reduces these duplicates, allowing accurate aggregation by event type.
+
+```{r}
+# Standardize EVTYPE
+storm_data[, EVTYPE := toupper(trimws(EVTYPE))]
+```
+
+4. Processing Damage Variables
+
+Property and crop damage are recorded in two parts: a numeric base *(PROPDMG, CROPDMG)* and an exponent code *(PROPDMGEXP, CROPDMGEXP)* like "K" (thousands), "M" (millions), or "B" (billions), as per the Storm Data Documentation. Without conversion, these cannot be summed meaningfully for total economic consequences. 
+
+We define a function to map exponents to numeric multipliers (defaulting to 1 for empty or invalid codes to avoid data loss) and compute *TOTAL_DMG* in consistent USD units. This step ensures comparable economic impacts across events.
+
+```{r}
+# Define function to convert damage exponents to numeric multipliers
+convert_exp <- function(exp) {
+  exp <- toupper(exp)
+  ifelse(exp == "K", 1e3,
+         ifelse(exp == "M", 1e6,
+                ifelse(exp == "B", 1e9, 1)))
+}
+
+# Convert damage exponents and calculate total damage in USD
+storm_data[, PROPDMGEXP := ifelse(is.na(PROPDMGEXP) | PROPDMGEXP == "", 1, convert_exp(PROPDMGEXP))]
+storm_data[, CROPDMGEXP := ifelse(is.na(CROPDMGEXP) | CROPDMGEXP == "", 1, convert_exp(CROPDMGEXP))]
+storm_data[, TOTAL_DMG := PROPDMG * PROPDMGEXP + CROPDMG * CROPDMGEXP]
+```
+
+5. Parsing Dates
+
+The BGN_DATE column is in a string format *(e.g., "MM/DD/YYYY HH:MM:SS")*, which is not suitable for chronological analysis or filtering. Using *lubridate::mdy_hms*, we convert it to a POSIXct date-time object with UTC timezone to enable time-based insights, such as trends over years or seasonal patterns.
+
+```{r}
+# Parse BGN_DATE to date format
+storm_data[, BGN_DATE := mdy_hms(BGN_DATE, tz = "UTC")]
+```
+
+### Verifying the Cleaned Data
+After cleaning, we verify the transformed dataset by summarizing the key variables to ensure the transformations were applied correctly. This step confirms that event types are standardized, health and damage metrics are complete, and dates are properly formatted, setting the stage for accurate analysis of population health and economic impacts.
+
+```{r}
+# Verify cleaned data
+summary(storm_data[, .(EVTYPE, FATALITIES, INJURIES, TOTAL_DMG, BGN_DATE)])
+```
 
 -----
 
