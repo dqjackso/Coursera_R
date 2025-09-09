@@ -1,6 +1,6 @@
 ---
-title: "The Economic Cost of Weather Events"
-subtitle: "A historical analysis of the economic impacts of severe weather events in the United States from 1950 to 2011."
+title: "The Cost of Weather Events"
+subtitle: "A historical analysis of the economic and health impacts of severe weather events in the United States from 1950 to 2011."
 author: "Derek Q. Jackson"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
@@ -15,6 +15,9 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.align =
 ```
 
 # Synopsis
+This report provides a comprehensive analysis of the NOAA Storm Database (1950–2011) to assess the impact of weather events across the United States, focusing on population health and economic consequences. The study addresses two primary questions: (1) which weather events are most harmful to population health, measured by total fatalities and injuries, and (2) which events cause the greatest economic damage, quantified by combined property and crop losses in USD. Additionally, it evaluates the average harm per event occurrence to identify events with the highest magnitude of impact per instance.
+
+Key findings reveal that "Tornado," "Thunderstorm," and "Flood" rank as the top three events for total health impacts, with "Excessive Heat" in fourth place, reflecting significant combined fatalities and injuries. Economically, "Flood," "Hurricane/Typhoon," "Tornado," and "Storm Surge" dominate the top four for total damage, with losses reaching multiple billions of USD. When considering average harm per occurrence, "Hurricane/Typhoon," "Tsunami," "Glaze," and "Excessive Heat" emerge as the most impactful, indicating their severe per-event consequences despite varying frequencies. These insights, derived from data spanning over six decades (with noted limitations in early years), underscore the need for targeted preparedness strategies. The report includes three visualizations: total health impacts (Figure 1), total economic damage (Figure 2), and average harm per occurrence (Figure 3).
 
 -----
 
@@ -24,7 +27,7 @@ This section outlines the process of acquiring and preparing the NOAA Storm Data
 ## Package Installation & Loading
 First, it's important to ensure that all necessary R packages for running this analysis & report are installed and loaded. If you are running this analysis for the first time, these packages will be installed automatically.
 
-```{r package_installation, cache=TRUE}
+```{r package_installation}
 required_packages <- c("data.table", "lubridate", "ggplot2", "cowplot", "reshape2")
 
 # Check if packages are installed, install if not, then load them
@@ -55,7 +58,7 @@ For instance, the database spans decades with evolving recording practices, lead
 
 Summarizing key columns *(EVTYPE, FATALITIES, INJURIES, PROPDMG, CROPDMG)* helps understand the data's structure, ranges, and potential issues like outliers or data types. We also explicitly check for missing values in these critical columns to quantify data gaps and inform handling strategies, ensuring we make informed decisions about data retention or removal.
 
-```{r}
+```{r inspecting_dataset}
 # Inspect the dataset
 summary(storm_data[, .(EVTYPE, FATALITIES, INJURIES, PROPDMG, CROPDMG)])
 
@@ -76,7 +79,7 @@ The output of *missing_summary* indicates no missing values *(NA)* in the critic
 
 Although the inspection shows no *NA* values in the critical columns, we include a step to handle potential edge cases, such as empty strings in *EVTYPE* or zero values in damage columns that might reflect unreported data. For *EVTYPE*, we ensure no empty strings *(e.g., "")* exist, as this column is central to grouping events for analysis. Rows with empty *EVTYPE* strings would be meaningless for aggregating health or economic impacts and are removed. For *PROPDMG* and *CROPDMG*, values of zero are retained, as the documentation suggests unreported damage implies no significant loss, but we verify that no negative values exist, which would be invalid for damage estimates.
 
-```{r}
+```{r handling_missing_values}
 # Remove rows with empty or whitespace-only EVTYPE
 storm_data <- storm_data[EVTYPE != "" & !is.na(trimws(EVTYPE))]
 
@@ -89,21 +92,22 @@ storm_data[CROPDMG < 0, CROPDMG := 0]
 
 The *EVTYPE* column may contain inconsistencies due to manual entry over many years, such as variations in casing (e.g., "Tornado" vs. "TORNADO"), extra spaces, or minor misspellings. Converting to uppercase and trimming whitespace reduces these duplicates, allowing accurate aggregation by event type.
 
-```{r}
+```{r standardizing_event_types}
 # Standardize EVTYPE
 storm_data[, EVTYPE := toupper(trimws(EVTYPE))]
 ```
 
 The EVTYPE column also contains near-duplicate entries due to abbreviations or slight variations in naming (e.g., "TSTM WIND" and "THUNDERSTORM WIND" both refer to winds produced by thunderstorms). Combining these duplicates is essential to avoid underestimating the impact of similar events in aggregations for population health or economic consequences. Based on the official event types from the National Weather Service Storm Data Documentation, we map common variations to standardized official names. Note that "FLOOD" and "FLASH FLOOD" are kept separate, as they are distinct official event types (general flooding vs. sudden flooding), unless specified otherwise.
 
-```{r}
+```{r removing_duplicate_event_types}
 # Map common duplicates to official event types
-storm_data[grepl("TSTM WIND|THUNDERSTORM WINDS|THUNDERSTORMWIND|THUNDERTORM WIND|THUDERSTORM WINDS|THUNDERSTROM WIND|THUNDERSTORM WIND.*|TSTMW|THUNDERSTORMW|THUNDERSTORM WINDS.*", EVTYPE), EVTYPE := "THUNDERSTORM WIND"]
+storm_data[grepl("TSTM WIND|THUNDERSTORM WINDS|THUNDERSTORMWIND|THUNDERTORM WIND|THUDERSTORM WINDS|THUNDERSTROM WIND|THUNDERSTORM WIND.*|TSTMW|THUNDERSTORMW|THUNDERSTORM WINDS.*|SEVERE THUNDERSTORM.*", EVTYPE), EVTYPE := "THUNDERSTORM"]
 storm_data[grepl("HIGH WIND.*|STRONG WIND.*|GUSTY WIND", EVTYPE), EVTYPE := "HIGH WIND"]
 storm_data[grepl("EXCESSIVE HEAT|HEAT WAVE|HEATWAVE|EXTREME HEAT", EVTYPE), EVTYPE := "EXCESSIVE HEAT"]
 storm_data[grepl("WINTER STORM|WINTER WEATHER|MIXED PRECIP|WINTRY MIX|BLIZZARD|ICE STORM", EVTYPE), EVTYPE := "WINTER STORM"]
 storm_data[grepl("FLASH FLOOD.*|FLASH FLOODING", EVTYPE), EVTYPE := "FLASH FLOOD"]
 storm_data[grepl("FLOOD.*|URBAN FLOOD|COASTAL FLOOD", EVTYPE), EVTYPE := "FLOOD"]
+storm_data[grepl("HURRICANE/TYPHOON|HURRICANE.*|TYPHOON.*", EVTYPE), EVTYPE := "HURRICANE/TYPHOON"]
 ```
 
 **4. Processing Damage Variables**
@@ -112,7 +116,7 @@ Property and crop damage are recorded in two parts: a numeric base *(PROPDMG, CR
 
 We define a function to map exponents to numeric multipliers (defaulting to 1 for empty or invalid codes to avoid data loss) and compute *TOTAL_DMG* in consistent USD units. This step ensures comparable economic impacts across events.
 
-```{r}
+```{r computing_total_damage_values}
 # Define function to convert damage exponents to numeric multipliers
 convert_exp <- function(exp) {
   exp <- toupper(exp)
@@ -131,7 +135,7 @@ storm_data[, TOTAL_DMG := PROPDMG * PROPDMGEXP + CROPDMG * CROPDMGEXP]
 
 The BGN_DATE column is in a string format *(e.g., "MM/DD/YYYY HH:MM:SS")*, which is not suitable for chronological analysis or filtering. Using *lubridate::mdy_hms*, we convert it to a POSIXct date-time object with UTC timezone to enable time-based insights, such as trends over years or seasonal patterns.
 
-```{r}
+```{r parsing_dates}
 # Parse BGN_DATE to date format
 storm_data[, BGN_DATE := mdy_hms(BGN_DATE, tz = "UTC")]
 ```
@@ -149,13 +153,14 @@ head(storm_data[, .(EVTYPE, FATALITIES, INJURIES, TOTAL_DMG, BGN_DATE)])
 # Analysis
 This section presents the analysis of the NOAA Storm Database to address two questions: 
 
-**(1) Which types of weather events are most harmful to population health?** 
-**(2) Which types have the greatest economic consequences?**
+**Which types of weather events are most harmful to population health?**
+
+**Which types have the greatest economic consequences?**
 
 ## Population Health Impacts
 To determine the weather events most harmful to population health, we aggregate *FATALITIES* and *INJURIES* by __*EVTYPE*__ to capture both fatal and non-fatal impacts. We select the top 10 event types based on total injuries and visualize both fatalities and injuries within each bar to provide a comprehensive view of health risks. The bars are ordered by the total number of combined injuries and fatalities, with fatalities shown in orange and injuries in blue.
 
-```{r}
+```{r calculating_health_impacts}
 # Aggregate fatalities and injuries by event type
 health_impact <- storm_data[, .(
   Total_Fatalities = sum(FATALITIES),
@@ -191,20 +196,110 @@ p1 <- ggplot(health_long, aes(x = factor(EVTYPE, levels = rev(top_health$EVTYPE)
     axis.title = element_text(face = "bold"),
     panel.grid.major = element_line(color = "grey80"),
     panel.grid.minor = element_blank(),
-    plot.background = element_rect(color = "black", linewidth = 1),
-    plot.margin = unit(c(0.5, 1.5, 0.5, 0.5), "cm")  # Ensure no cutoff
+    plot.background = element_rect(color = "grey", linewidth = 1),
+    plot.margin = unit(c(0.5, 1.5, 0.5, 0.5), "cm")
   )
 
 # Display the plot
 print(p1)
 ```
-### Figure 1: Top Weather Events Impacting Population Health
-This bar plot displays the top 10 weather event types by total injuries in the NOAA Storm Database (1950–2011), with each bar showing both injuries (blue) and fatalities (orange) stacked together. The events are ordered by the total number, highlighting tornadoes and thunderstorm winds as leading causes of harm, while also revealing significant harm counts for floods and excessive heat.
+#### Figure 1: Top Weather Events Impacting Population Health
+This bar plot displays the top 10 weather event types by total injuries in the NOAA Storm Database (1950–2011), with each bar showing both injuries (blue) and fatalities (orange) stacked together. The events are ordered by the total number, highlighting tornadoes and thunderstorms as leading causes of harm, while also revealing significant harm counts for floods and excessive heat.
 
 ## Economic Consequences
+To identify weather events with the greatest economic consequences, we aggregate the *TOTAL_DMG* (combined property and crop damage in USD) by __*EVTYPE*__ and select the top 10 event types. Since damage values span orders of magnitude (e.g., millions to billions), we use a logarithmic linear scale for visualization to ensure readability while preserving relative comparisons. 
+
+```{r calculating_economic_impacts}
+# Aggregate total damage by event type
+economic_impact <- storm_data[, .(Total_Damage = sum(TOTAL_DMG)), by = EVTYPE]
+
+# Get top 10 event types by total damage
+top_damage <- economic_impact[order(-Total_Damage)][1:10]
+```
+
+```{r economic_impact_plot, fig.cap="This plot displays the top 10 event types ordered by total economic damage (property and crop damage combined)."}
+# Create plot for total economic damage
+p2 <- ggplot(top_damage, aes(x = reorder(EVTYPE, Total_Damage), y = Total_Damage / 1e9)) +
+  geom_bar(stat = "identity", fill = "#009E73") +
+  coord_flip() +
+  scale_y_continuous(labels = scales::comma, breaks = scales::pretty_breaks(n = 10)) +
+  labs(x = "Event Type", y = "Total Damage (Billions USD)", title = "Top 10 Weather Events by Economic Damage") +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.major = element_line(color = "grey80"),
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(color = "grey", linewidth = 1),
+    plot.margin = unit(c(0.5, 1.5, 0.5, 0.5), "cm")
+  )
+
+# Display the plot
+print(p2)
+```
+#### Figure 2: Top Weather Events Impacting the Economy
+This bar plot illustrates the top 10 weather event types by total economic damage (property and crop combined, in billions USD) in the NOAA Storm Database (1950–2011). Events like "FLOOD" (including flash floods), "HURRICANE/TYPHOON", and "TORNADO" cause the highest economic losses, which could possibly be due to aggregating the near-duplicate event types.
+
+## Magnitude of Harm Per Event Occurrence
+To identify weather events with the largest magnitude of average harm per occurrence, we calculate the average health harm *(fatalities + injuries per event)* and average economic damage *(TOTAL_DMG per event)* for each *EVTYPE*. We filter for events with at least 10 occurrences to avoid outliers from rare events. To compare these metrics on a single plot, we normalize each average by its maximum value across all events (0-1 scale) and compute a combined normalized score. The top 10 events by this combined score are selected for visualization.
+
+```{r calculating_harm_per_occurrence}
+# Calculate statistics per event type
+event_stats <- storm_data[, .(
+  Occurrences = .N,
+  Total_Health_Harm = sum(FATALITIES + INJURIES),
+  Total_Economic_Damage = sum(TOTAL_DMG)
+), by = EVTYPE]
+
+event_stats[, Avg_Health_Harm := Total_Health_Harm / Occurrences]
+event_stats[, Avg_Economic_Damage := Total_Economic_Damage / Occurrences]
+
+# Filter for events with at least 10 occurrences
+event_stats_filtered <- event_stats[Occurrences >= 10]
+
+# Normalize averages (0-1 scale)
+event_stats_filtered[, Norm_Avg_Health := Avg_Health_Harm / max(Avg_Health_Harm)]
+event_stats_filtered[, Norm_Avg_Econ := Avg_Economic_Damage / max(Avg_Economic_Damage)]
+
+# Calculate combined normalized score
+event_stats_filtered[, Combined_Norm := (Norm_Avg_Health + Norm_Avg_Econ) / 2]
+
+# Get top 10 by combined normalized score
+top_combined <- event_stats_filtered[order(-Combined_Norm)][1:10]
+
+# Reshape for plotting
+#avg_long <- melt(top_combined[, .(EVTYPE, Norm_Avg_Health, Norm_Avg_Econ)], 
+                 #id.vars = "EVTYPE", variable.name = "Metric", value.name = "Value")
+```
+
+```{r magnitude_per_occurrence_plot, fig.cap="This plot displays the top 10 event types ordered by average harm per occurrence."}
+# Create grouped bar plot
+p3 <- ggplot(top_combined, aes(x = factor(EVTYPE, levels = rev(top_combined$EVTYPE)), y = Combined_Norm)) +
+  geom_bar(stat = "identity", position = "dodge", fill = "#F0E442") +
+  coord_flip() +
+  labs(x = "Event Type", y = "Combined Average Harm per Event (0-1 Scale)", title = "Top 10 Events by Average Harm per Occurrence",
+       fill = "Metric") +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.major = element_line(color = "grey80"),
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(color = "grey", linewidth = 1),
+    plot.margin = unit(c(0.5, 1.5, 0.5, 0.5), "cm")  # Ensure no cutoff
+  )
+
+# Display the plot
+print(p3)
+```
+#### Figure 3: Top 10 Weather Events by Average Harm per Occurrence
+This grouped bar plot displays the top 10 weather event types by normalized average harm per occurrence in the NOAA Storm Database (1950–2011) normalized to a 0-1 scale for comparison. The events are ordered by a combined normalized score, highlighting events like "HURRICANE/TYPHOON" or "TSUNAMI" that have high average impact per occurrence.
 
 -----
 
 # Results
+The analysis of the NOAA Storm Database (1950–2011) yields clear insights into weather event impacts. For population health, the top three events by total combined fatalities and injuries are "Tornado," "Thunderstorm," and "Flood," with "Excessive Heat" ranking fourth, reflecting their widespread harm across the U.S. Economically, "Flood" leads with the highest total damage, followed by "Hurricane/Typhoon," "Tornado," and "Storm Surge" in the top four, with damages escalating into billions of USD due to their scale and frequency. When assessing average harm per occurrence, "Hurricane/Typhoon" tops the list, followed by "Tsunami," "Glaze," and "Excessive Heat," highlighting their intense per-event impact despite varying occurrence rates. These findings, derived from standardized event types and filtered for events with at least 10 occurrences, underscore the dual nature of weather risks: frequent events cause large cumulative harm and rare events can deliver catastrophic damage per occurrence.
 
 -----
