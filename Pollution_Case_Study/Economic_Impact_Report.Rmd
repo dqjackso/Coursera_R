@@ -39,7 +39,7 @@ for (pkg in required_packages) {
 ## Data Acquisition
 The NOAA Storm Database is accessed directly from the URL without saving it locally. The fread function reads the compressed *.csv.bz2* file into a *data.table* object for efficient processing. To optimize performance, caching is enabled for this time-consuming operation.
 
-```{r download_data, cache=TRUE}
+```{r download_data}
 options(knitr.cache = TRUE)
 
 data_url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
