@@ -1,0 +1,147 @@
+---
+title: "Statistical Inference Project"
+author: "Derek Q. Jackson"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(ggplot2)
+```
+---
+
+# Part 1: Simulation Exercise
+
+## Overview
+
+This project investigates the exponential distribution in R and compares it with the Central Limit Theorem (CLT). I will demonstrate that while the underlying distribution is highly skewed, the distribution of the averages of 40 exponentials is approximately normal.
+
+## Simulations
+
+I set the rate parameter $\lambda = 0.2$ for all simulations. Then I perform 1,000 simulations, each consisting of the mean of 40 random exponentials.
+
+```{r eval=TRUE, include=TRUE}
+lambda <- 0.2
+n <- 40
+sims <- 1000
+
+simulated_means <- replicate(sims, mean(rexp(n, lambda)))
+```
+
+## Sample Mean vs Theoretical Mean
+
+The theoretical mean of an exponential distribution is $1/\lambda$ (1 / 0.2 = 5). According to the CLT, the center of our distribution of averages should be very close to this theoretical mean.
+
+```{r eval=TRUE, include=TRUE}
+# Theoretical Mean
+theoretical_mean <- 1/lambda
+sim_mean <- mean(simulated_means)
+sprintf("The theoretical mean is %d while the simulated mean is %.4f", theoretical_mean, sim_mean)
+```
+
+And as you can see, this is the case. The CLT holds true because the mean of 1000 simulations of taking the average of 40 random exponentials is very close to the theoretical mean.
+
+## Sample Variance vs Theoretical Variance
+
+The theoretical variance of an exponential distribution is calculated as $\sigma^2 / n$, where $\sigma = 1/\lambda$. According to the Central Limit Theorem (CLT), the theoretical variance of the sampling distribution and the variance of my sample means should be very similar, provided the sample size is sufficiently large and the number of simulations is high.
+
+```{r eval=TRUE, include=TRUE}
+theoretical_var <- (1/lambda)^2 / n
+sample_var <- var(simulated_means)
+```
+
+The sample variance is approximately `r round(sample_var, 3)`, which is very close to the theoretical variance of `r theoretical_var`. The CLT holds true once again.
+
+## Comparing Exponential Distribution to Distribution of Averages
+
+Next, I compare the distribution of 1,000 random exponentials with the distribution of 1,000 averages of 40 exponentials. According to the CLT, the distribution of averages should be Gaussian (bell-shaped), while the exponential distribution should be highly skewed.
+
+```{r eval=TRUE, include=TRUE}
+# 1000 random exponentials
+raw_exponentials <- rexp(sims, lambda)
+
+# Comparison Plot
+par(mfrow = c(1, 2))
+hist(raw_exponentials, main = "1000 Random Exponentials", col = "gray")
+hist(simulated_means, main = "1000 Averages of 40", col = "lightblue", prob = TRUE)
+curve(dnorm(x, mean = theoretical_mean, sd = sqrt(theoretical_var)), 
+      add = TRUE, col = "darkred", lwd = 2)
+```
+
+As shown above, the distribution of averages follows the normal curve (in red) much more closely than the raw exponential distribution, satisfying the Central Limit Theorem.
+
+---
+
+# Part 2: Tooth Growth Data Analysis
+
+## Exploratory Data Analysis
+First, I load the ToothGrowth dataset, which measures the effect of Vitamin C on tooth growth in guinea pigs. Then I generate a plot displaying tooth growth sorted by dose and supplement type.
+```{r eval=TRUE, include=TRUE}
+data("ToothGrowth")
+summary(ToothGrowth)
+
+ggplot(ToothGrowth, aes(x = factor(dose), y = len, fill = supp)) +
+  geom_boxplot() +
+  labs(title = "Tooth Growth by Dosage and Supplement",
+       x = "Dose", y = "Tooth Length", fill = "Supplement")
+```
+
+## Hypothesis Testing
+I will be testing the following questions:
+-How does tooth growth differ between Orange Juice versus Ascorbic Acid (VC)?
+-How does dosage amount affect tooth growth, regardless of the supplement type?
+-How do the supplements compare at the lowest dose amount?
+
+### 1. Comparing Supplement Type (OJ vs VC)
+I first test if there is a difference in tooth growth between OJ and VC.
+```{r eval=TRUE, include=TRUE}
+t.test(len ~ supp, data = ToothGrowth, var.equal = FALSE)
+```
+
+### 2. Comparing Dosage Levels
+To see if increasing the dose significantly increases tooth growth, I compare the three dosage levels (0.5, 1.0, and 2.0 mg/day).
+
+#### Dose 0.5 vs Dose 1.0
+```{r eval=TRUE, include=TRUE}
+t.test(len ~ dose, data = subset(ToothGrowth, dose %in% c(0.5, 1.0)))
+```
+
+#### Dose 1.0 vs Dose 2.0
+```{r eval=TRUE, include=TRUE}
+t.test(len ~ dose, data = subset(ToothGrowth, dose %in% c(1.0, 2.0)))
+```
+
+#### Dose 0.5 vs Dose 2.0
+```{r eval=TRUE, include=TRUE}
+t.test(len ~ dose, data = subset(ToothGrowth, dose %in% c(0.5, 2.0)))
+```
+
+### 3. Comparing Supplements by Dosage Levels
+It is also useful to investigate whether any supplement outperforms the other at a specific
+dosage level. To do this, I will run tests comparing the supplements at each dosage leve.
+
+#### Dose 0.5
+```{r eval=TRUE, include=TRUE}
+t.test(len ~ supp, data = subset(ToothGrowth, dose == 0.5))
+```
+
+#### Dose 1.0
+```{r eval=TRUE, include=TRUE}
+t.test(len ~ supp, data = subset(ToothGrowth, dose == 1.0))
+```
+
+#### Dose 2.0
+```{r eval=TRUE, include=TRUE}
+t.test(len ~ supp, data = subset(ToothGrowth, dose == 2.0))
+```
+
+# Conclusions
+
+## Conclusions
+
+### Dose Effect
+There is a statistically significant increase in tooth length as the dosage increases from 0.5mg to 2.0mg.
+
+### Supplement Effect
+The overall test comparing supplement types across all doses indicates that there may not be a significant difference. However, sub analyses show that at lower doses (0.5mg and 1.0mg), Orange Juice (OJ) appears to result in more tooth growth than Ascorbic Acid (VC). At the dosage level of 2.0mg, the difference between the two disappears.
